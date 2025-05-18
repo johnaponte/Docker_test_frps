@@ -1,0 +1,28 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon?
+Icon?
+
+# Thumbnails
+._*
+
+# Spotlight
+.Spotlight-V100
+
+# Trash
+.Trashes
+
+# macOS volume settings
+.VolumeIcon.icns
+
+# VSCode settings
+.vscode/
+
+# Secretos del proyecto
+**/certs/
+**/*.env
+**/deploy_config.env
+**/deploy_config.sh
