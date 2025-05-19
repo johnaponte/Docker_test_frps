@@ -22,7 +22,5 @@ Icon?
 .vscode/
 
 # Secretos del proyecto
-**/certs/
-**/*.env
-**/deploy_config.env
-**/deploy_config.sh
+deploy_config.env
+testenv
