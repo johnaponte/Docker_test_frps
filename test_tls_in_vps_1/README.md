@@ -1,18 +1,19 @@
-# Exposing Internal Services with FRP and NGINX + TLS
+# Exposing Internal Services with FRP and NGINX + TLS in an external network.
+** No redirection **
 
-This is a demonstration project that shows how to expose two internal web servers to the internet using [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), running behind an NGINX reverse proxy with TLS termination on a VPS.
-
+This is a demonstration project that shows how to expose two internal web servers to the internet using [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), running behind an NGINX reverse proxy with TLS termination on a Virtual Private Server (VPS).
+**"No redirection"** means that the proxy serves the route exactly as requested by the client, without modification.
 ---
 
 ## 🔧 Project Overview
 
-The project simulates two local clients (`client1` and `client2`), each running a web service (`/test1/` and `/test2/` respectively). These services are made publicly accessible via a FRP server running in a remote VPS. The VPS is also running NGINX to handle TLS and route traffic based on path.
+The project simulates two local clients (Client 1 and Client 2), each running a web service (`/test1/` and `/test2/`, respectively). These services are made publicly accessible via a FRP server running in a remote VPS. The VPS is also running NGINX to handle TLS and route traffic based on path.
 
 ---
 
 ## 🗂 Structure
 
-After running the provided script, the following structure will be created:
+After running the provided script (`project_template.sh`), the following structure will be created:
 
 ```
 .
@@ -62,7 +63,7 @@ When executing the script, you can pass the domain as a parameter:
 
 ### 2. TLS Certificates
 
-You must provide valid TLS certificates for your domain and place them in:
+You must provide valid TLS certificates for your domain and place them in the `certs/` directory located at:
 
 ```
 server/nginx/certs/cert.pem
@@ -96,7 +97,7 @@ docker compose up -d
 
 ### 4. Run Local Clients
 
-Each client has its own `docker-compose.yaml`. You can run them independently:
+Each client has its own `docker-compose.yaml` file and can be run independently:
 
 ```bash
 cd client1
@@ -133,7 +134,7 @@ Each client will register a tunnel with the FRP server, exposing:
 
 ## 🧪 Demo Behavior
 
-Each client serves a simple HTML page, which can be accessed securely over the internet through the public domain using a TLS-protected NGINX proxy combined with FRP tunnel routing.
+Each client serves a simple HTML page, accessible securely over the internet via a TLS-protected NGINX reverse proxy and FRP tunnel routing.
 
 ---
 
