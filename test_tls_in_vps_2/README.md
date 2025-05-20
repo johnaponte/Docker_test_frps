@@ -1,49 +1,24 @@
-# Exposing Internal Services with FRP and NGINX + TLS in an external network.
-** No redirection **
+# Exposing Internal Services with FRP and NGINX + TLS Using Multiple External Domains
 
 This is a demonstration project that shows how to expose two internal web servers to the internet using [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), running behind an NGINX reverse proxy with TLS termination on a Virtual Private Server (VPS).
-**"No redirection"** means that the proxy serves the route exactly as requested by the client, without modification.
 ---
 
 ## 🔧 Project Overview
 
-The project simulates two local clients (Client 1 and Client 2), each running a web service (`/test1/` and `/test2/`, respectively). These services are made publicly accessible via a FRP server running in a remote VPS. The VPS is also running NGINX to handle TLS and route traffic based on path.
+The project simulates two local clients (Client 1 and Client 2), each identified by its own domain name (e.g., `client1.example.com` and `client2.example.com`). These services are made publicly accessible through an FRP server running on a remote VPS. The VPS is also running NGINX to handle TLS and route traffic based on the domain name.
 
 ---
 
-## 🗂 Structure
+## 🔧 Configure DNS
 
-After running the provided script (`project_template.sh`), the following structure will be created:
+You must set up two domain names (e.g., `yourdomain1.com` and `yourdomain2.com`) and point both of them to the same VPS IP address using A records:
 
 ```
-.
-├── client1/
-│   ├── docker-compose.yaml
-│   ├── frpc/
-│   │   └── frpc.toml
-│   ├── html/
-│   │   └── test1/index.html
-│   └── nginx/
-│       └── nginx.conf
-├── client2/
-│   ├── docker-compose.yaml
-│   ├── frpc/
-│   │   └── frpc.toml
-│   ├── html/
-│   │   └── test2/index.html
-│   └── nginx/
-│       └── nginx.conf
-├── server/
-│   ├── docker-compose.yaml
-│   ├── frps/
-│   │   └── frps.toml
-│   └── nginx/
-│       ├── nginx.conf
-│       └── certs/
-│           ├── cert.pem
-│           └── key.pem
-└── project_template.sh
+yourdomain1.com.  IN  A  <your-vps-ip>
+yourdomain2.com.  IN  A  <your-vps-ip>
 ```
+
+This step must be completed at your domain registrar or DNS hosting provider.
 
 ---
 
@@ -51,12 +26,12 @@ After running the provided script (`project_template.sh`), the following structu
 
 ### 1. Customize the Domain
 
-The script uses a placeholder domain `yourdomain.com`. You must replace this with a real domain that points to your VPS.
+The script uses placeholder domains `yourdomain1.com` and `yourdomain2.com`. You must replace these with real domains that both point to your VPS.
 
-When executing the script, you can pass the domain as a parameter:
+When executing the script, you can pass the domains as parameters:
 
 ```bash
-./project_template.sh --domain yourdomain.com
+./project_template.sh --domain1 yourdomain1.com --domain2 yourdomain2.com
 ```
 
 ---
@@ -70,7 +45,8 @@ server/nginx/certs/cert.pem
 server/nginx/certs/key.pem
 ```
 
-You can obtain free certificates using [Let's Encrypt](https://letsencrypt.org/) or any trusted CA.
+You can obtain free certificates using [Let's Encrypt](https://letsencrypt.org/) or any trusted CA.  
+This setup assumes both domains are covered by the same TLS certificate (e.g., a SAN or wildcard certificate). If using separate certificates, adjust the NGINX configuration accordingly.
 
 ---
 
@@ -107,10 +83,10 @@ cd ../client2
 docker compose up -d
 ```
 
-Each client will register a tunnel with the FRP server, exposing:
-
-- `http://yourdomain.com/test1/` → client1
-- `http://yourdomain.com/test2/` → client2
+> ✅ Once both clients are running, you can test the setup by visiting:
+>
+> - `https://yourdomain1.com` → Should show Client 1's page
+> - `https://yourdomain2.com` → Should show Client 2's page
 
 ---
 
