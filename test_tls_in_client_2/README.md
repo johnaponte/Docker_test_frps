@@ -1,24 +1,23 @@
-# Exposing Internal Services with FRP and NGINX + TLS Using Multiple External Domains
+# Exposing Internal Services with FRP and Per-Client NGINX + TLS Using Multiple External Domains
 
-This is a demonstration project that shows how to expose two internal web servers to the internet using [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), running behind an NGINX reverse proxy with TLS termination on a Virtual Private Server (VPS).
+This project demonstrates how to expose two internal web servers (clients) to the internet using [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp). Each client terminates TLS traffic using its own NGINX container and domain name. The FRP server runs on a remote VPS and simply forwards traffic based on domain routing.
+
 ---
 
 ## 🔧 Project Overview
 
-The project simulates two local clients (Client 1 and Client 2), each identified by its own domain name (e.g., `client1.example.com` and `client2.example.com`). These services are made publicly accessible through an FRP server running on a remote VPS. The VPS is also running NGINX to handle TLS and route traffic based on the domain name.
+This project simulates two local clients (Client 1 and Client 2), each identified by its own domain name (e.g., `yourdomain1.com` and `yourdomain2.com`). These services are made publicly accessible through an FRP server running on a remote VPS. Each client includes its own NGINX reverse proxy configured for TLS termination, isolating TLS handling from the central server.
 
 ---
 
 ## 🔧 Configure DNS
 
-You must set up two domain names (e.g., `yourdomain1.com` and `yourdomain2.com`) and point both of them to the same VPS IP address using A records:
+You must set up two domain names and point both to the same VPS IP address:
 
 ```
 yourdomain1.com.  IN  A  <your-vps-ip>
 yourdomain2.com.  IN  A  <your-vps-ip>
 ```
-
-This step must be completed at your domain registrar or DNS hosting provider.
 
 ---
 
@@ -26,9 +25,7 @@ This step must be completed at your domain registrar or DNS hosting provider.
 
 ### 1. Customize the Domain
 
-The script uses placeholder domains `yourdomain1.com` and `yourdomain2.com`. You must replace these with real domains that both point to your VPS.
-
-When executing the script, you can pass the domains as parameters:
+Run the setup script and provide your two domain names:
 
 ```bash
 ./project_template.sh --domain1 yourdomain1.com --domain2 yourdomain2.com
@@ -38,42 +35,40 @@ When executing the script, you can pass the domains as parameters:
 
 ### 2. TLS Certificates
 
-You must provide valid TLS certificates for your domain and place them in the `certs/` directory located at:
+Each client has its own TLS-terminating NGINX proxy. You must place valid TLS certificates in the appropriate directory:
 
 ```
-server/nginx/certs/cert.pem
-server/nginx/certs/key.pem
+client1/nginx_tls/certs/cert.pem
+client1/nginx_tls/certs/key.pem
+
+client2/nginx_tls/certs/cert.pem
+client2/nginx_tls/certs/key.pem
 ```
 
-You can obtain free certificates using [Let's Encrypt](https://letsencrypt.org/) or any trusted CA.  
-This setup assumes both domains are covered by the same TLS certificate (e.g., a SAN or wildcard certificate). If using separate certificates, adjust the NGINX configuration accordingly.
+Certificates can be obtained from Let's Encrypt or another Certificate Authority.
 
 ---
 
-### 3. Deploy the Server to VPS
+### 3. Deploy the FRP Server to VPS
 
-Upload the `server/` directory to your VPS. You can use `scp` or `rsync` for this:
+Upload the `server/` directory to your VPS and start the FRP server:
 
 ```bash
 rsync -avz server/ user@your-vps-ip:/path/on/vps
-```
-
-> Ensure the VPS has the following ports **open and reachable**:
-> - `7000` for FRP
-> - `443` for HTTPS
-
-Then, SSH into the VPS and run the server:
-
-```bash
+ssh user@your-vps-ip
 cd /path/on/vps/server
 docker compose up -d
 ```
+
+Ensure the following ports are reachable on the VPS:
+- `7000` for FRP communication
+- `443` for HTTPS access
 
 ---
 
 ### 4. Run Local Clients
 
-Each client has its own `docker-compose.yaml` file and can be run independently:
+Each client has its own Docker Compose setup:
 
 ```bash
 cd client1
@@ -83,19 +78,21 @@ cd ../client2
 docker compose up -d
 ```
 
-> ✅ Once both clients are running, you can test the setup by visiting:
->
-> - `https://yourdomain1.com` → Should show Client 1's page
-> - `https://yourdomain2.com` → Should show Client 2's page
+---
+
+## ✅ Test the Setup
+
+- `https://yourdomain1.com` → Should serve Client 1's HTML page.
+- `https://yourdomain2.com` → Should serve Client 2's HTML page.
 
 ---
 
 ## 🔐 Security Notes
 
-- All traffic is encrypted via TLS by NGINX in the VPS.
-- FRP uses token authentication (`supersecret` by default in `frps.toml` and `frpc.toml`).
-- Change the token in both client and server before deploying in production.
-- The connection between the VPS and the clients is not encrypted.
+- TLS is terminated individually by each client's NGINX.
+- FRP uses token authentication (`supersecret` by default).
+- Update the token in both server and clients for production deployments.
+- No TLS encryption is enforced between the FRP server and clients beyond the client's own TLS layer.
 
 ---
 
@@ -110,10 +107,10 @@ docker compose up -d
 
 ## 🧪 Demo Behavior
 
-Each client serves a simple HTML page, accessible securely over the internet via a TLS-protected NGINX reverse proxy and FRP tunnel routing.
+Each client serves a standalone HTML page over HTTPS using its own NGINX TLS proxy. FRP routes public traffic based on the domain name to the correct client.
 
 ---
 
 ## ⚠️ Disclaimer
 
-This project is intended for demonstration and educational purposes only. It is not hardened for production. Use at your own risk.
+This setup is intended for development or demo purposes. It is not hardened for production use.
