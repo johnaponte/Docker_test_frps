@@ -106,3 +106,68 @@ If your TLS certificates differ between `domain1` and `domain2`, you must modify
 ---
 
 This architecture facilitates the secure and organized exposure of multiple internal services through a single entry point with TLS, leveraging the flexibility of FRP and the power of NGINX as a reverse proxy.
+
+
+### Tips for redirection
+
+**Redirection for RStudio**
+
+```
+        location = /auth-sign-in {
+            return 302 /rstudio/auth-sign-in;
+        }
+
+        location = /auth-sign-out {
+            return 302 /rstudio/auth-sign-out;
+        }
+
+        location = / {
+            if ($http_referer ~ "^https?://[^/]+/rstudio") {
+                return 302 /rstudio;
+            }
+
+            return 200 'Nothing here';
+            add_header Content-Type text/plain;
+        }   
+
+        location /rstudio/ {
+            proxy_pass http://rstudio:8787/;
+            proxy_redirect / /rstudio/;
+
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Server $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            rewrite ^/rstudio$ /rstudio/ permanent;
+        }
+````
+**Redirection for guacamole**
+
+```
+        location /rdp {
+            proxy_pass http://guacamole:8080/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Server $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            rewrite ^/rdp(/.*)?$ /guacamole$1 break;
+        }
+
+```
+
+
+
+
